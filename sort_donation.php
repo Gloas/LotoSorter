@@ -3,6 +3,7 @@ class SortDonation {
 
     protected array $_donations_list = [];
     protected array $_loto_cfg = [];
+    protected array $_log_stack = [];
 
     public function __construct(string $donations_filename) {
         $this->_log("OUTIL DE TRI DES DONS");
@@ -46,6 +47,8 @@ class SortDonation {
                             $this->_loto_cfg['kid']['quine'],
                             $this->_loto_cfg['kid']['double_quine'],
                             $this->_loto_cfg['kid']['carton']));
+
+        $this->_exportResult($sorted_donations_list);
     }
 
 
@@ -71,6 +74,7 @@ class SortDonation {
 
 
     protected function _log(string $message) : self {
+        $this->_log_stack [] = [$message];
         echo $message . "\n";
         return $this;
     }
@@ -107,6 +111,20 @@ class SortDonation {
         $fp = fopen('not_sorted_donations.csv', 'w');
         fputcsv($fp, ['RESTE DES DONS NON TRIÉS']);
         array_map(fn ($row) => fputcsv($fp, $row), $this->_donations_list);
+        fclose($fp);
+        return $this;
+    }
+
+
+    protected function _exportResult(SortedDonationsList $sorted_donations_list) : self {
+        $result = array_merge($this->_log_stack,
+                              [[]],
+                              $this->_donations_list,
+                              [[]],
+                              $sorted_donations_list->asArray());
+        unlink('auto_sort_loto_donations.csv');
+        $fp = fopen('auto_sort_loto_donations.csv', 'w');
+        array_map(fn ($row) => fputcsv($fp, $row), $result);
         fclose($fp);
         return $this;
     }
@@ -229,17 +247,20 @@ class SortDonationsForKid {
             $sum += $donation_price;
 
             if ( $sum >= ($price - ($price * static::$_variance_down)))
-                return $this->_addTotal($sum, $price);
+                return $this->_addTotal(count($current), $price);
         }
 
         return $this->_addTotal($sum, $price);
     }
 
 
-    protected function _addTotal(int $sum, int $price) : self {
-        SortedDonationsList::getInstance()->addRow(sprintf("Mise de %d€ / %d€ pour cette manche",
-                                                           $sum,
-                                                           $price));
+    protected function _addTotal(int $count, int $price) : self {
+        $sum = sprintf('=SUM(INDIRECT(ADDRESS(ROW()-1;COLUMN())):INDIRECT(ADDRESS(ROW()-%d;COLUMN())))',
+                       $count);
+        SortedDonationsList::getInstance()->addRow(['Mise de',
+                                                    '',
+                                                    $sum,
+                                                    '/ ' . $price . '€ pour cette manche']);
         SortedDonationsList::getInstance()->addBlankRow();
         return $this;
     }
