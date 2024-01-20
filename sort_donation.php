@@ -103,6 +103,7 @@ class SortDonation {
 
 
     protected function _exportNotSortedCsv() : self {
+        unlink('not_sorted_donations.csv');
         $fp = fopen('not_sorted_donations.csv', 'w');
         fputcsv($fp, ['RESTE DES DONS NON TRIÉS']);
         array_map(fn ($row) => fputcsv($fp, $row), $this->_donations_list);
