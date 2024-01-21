@@ -34,19 +34,23 @@ class SortDonation {
         $this->_log(sprintf('Nombre de lots MIX non triés : %d',
                             count($this->_mixDonations())));
 
-        $this->_log(sprintf('Nombre de lots ADULTES non triés : %d avec %d parties, quine à %d€, double quine à %d€ et carton à %d€.',
+        $this->_log(sprintf('Nombre de lots ADULTES non triés : %d avec %d parties, quine à %d€, double quine à %d€, carton à %d€, gros lot à plus de %d€ et pas de bol à plus de %d€.',
                             count($this->_adultsDonations()),
-                            $this->_loto_cfg['adult']['round'],
-                            $this->_loto_cfg['adult']['quine'],
-                            $this->_loto_cfg['adult']['double_quine'],
-                            $this->_loto_cfg['adult']['carton']));
+                            $this->_loto_cfg['adult']['round'] ?? 0,
+                            $this->_loto_cfg['adult']['quine'] ?? 0,
+                            $this->_loto_cfg['adult']['double_quine'] ?? 0,
+                            $this->_loto_cfg['adult']['carton'] ?? 0,
+                            $this->_loto_cfg['adult']['gros_lot'] ?? 0,
+                            $this->_loto_cfg['adult']['pas_de_bol'] ?? 0));
 
-        $this->_log(sprintf('Nombre de lots ENFANTS non triés : %d avec %d parties, quine à %d€, double quine à %d€ et carton à %d€.',
+        $this->_log(sprintf('Nombre de lots ENFANTS non triés : %d avec %d parties, quine à %d€, double quine à %d€ et carton à %d€, gros lot à plus de %d€ et pas de bol à plus de %d€.',
                             count($this->_childDonations()),
-                            $this->_loto_cfg['kid']['round'],
-                            $this->_loto_cfg['kid']['quine'],
-                            $this->_loto_cfg['kid']['double_quine'],
-                            $this->_loto_cfg['kid']['carton']));
+                            $this->_loto_cfg['kid']['round'] ?? 0,
+                            $this->_loto_cfg['kid']['quine'] ?? 0,
+                            $this->_loto_cfg['kid']['double_quine'] ?? 0,
+                            $this->_loto_cfg['kid']['carton'] ?? 0,
+                            $this->_loto_cfg['kid']['gros_lot'] ?? 0,
+                            $this->_loto_cfg['kid']['pas_de_bol'] ?? 0));
 
         $this->_exportResult($sorted_donations_list);
     }
@@ -160,10 +164,33 @@ class SortDonationsForKid {
 
         SortedDonationsList::getInstance()->addRow("Parties " . $this->_player_key);
 
-        $this->_sortDonationsWithRules();
+        $this
+            ->_sortDonationsWithRules()
+            ->_sortDonationsForGrosLotAndPasDeBol();
+    }
 
-        //$this->_sortDonationsForGrosLot($rules['gros_lot']);
-        //$this->_sortDonationsForPasDeBol($rules['pas_de_bol']);
+
+    protected function _sortDonationsForGrosLotAndPasDeBol(): static
+    {
+        $sorted_donations_list = SortedDonationsList::getInstance();
+        $gros_lot = (int) $this->_rules['gros_lot'] ?? 0;
+        $pas_de_bol = (int) $this->_rules['pas_de_bol'] ?? 0;
+
+        if ($gros_lot)
+        {
+            $sorted_donations_list->addRow("Gros lot");
+            $this->_sortDonationsForPrice($gros_lot, true);
+            $sorted_donations_list->addBlankRow();
+        }
+
+        if ($pas_de_bol)
+        {
+            $sorted_donations_list->addRow("Pas de bol");
+            $this->_sortDonationsForPrice($pas_de_bol, true);
+            $sorted_donations_list->addBlankRow();
+        }
+
+        return $this;
     }
 
 
@@ -173,7 +200,7 @@ class SortDonationsForKid {
     }
 
 
-    protected function _sortDonationsWithRules() {
+    protected function _sortDonationsWithRules(): static {
         $sorted_donations_list = SortedDonationsList::getInstance();
         $count = (int) $this->_rules['round'] ?? 0;
         $quine = (int) $this->_rules['quine'] ?? 0;
@@ -203,30 +230,17 @@ class SortDonationsForKid {
     }
 
 
-    protected function _sortDonationsForGrosLot(int $gros_lot) : self {
-        $sorted_donations_list = SortedDonationsList::getInstance();
-        $sorted_donations_list->addRow('Gros lot ' . $this->_player_key);
-        $this->_sortDonationsForPrice($gros_lot);
-        return $this;
-    }
-
-
-    protected function _sortDonationsForPasDeBol(int $pas_de_bol) : self {
-        $sorted_donations_list = SortedDonationsList::getInstance();
-        $sorted_donations_list->addRow('Pas de bol ' . $this->_player_key);
-        $this->_sortDonationsForPrice($pas_de_bol);
-        return $this;
-    }
-
-
-    protected function _sortDonationsForPrice(int $price) : self {
+    protected function _sortDonationsForPrice(int $price, bool $only_one_donation = false) : self {
         $sorted_donations_list = SortedDonationsList::getInstance();
         $sum = 0;
         $current = [];
 
         foreach ($this->_donations as $key => $donation) {
-            if ( ! $donation_price = (int) $donation[2] ?? 0)
+            if ( !$original_donatio_price = $donation[2] ?? 0)
                 continue;
+
+            $filtered_donation_price = filter_var($original_donatio_price, FILTER_SANITIZE_NUMBER_INT);
+            $donation_price = floatval($filtered_donation_price / 100);
 
             if ( ! $this->_forMe($donation))
                 continue;
@@ -237,7 +251,7 @@ class SortDonationsForKid {
             if ( $this->_inCurrentPrice($donation, $current))
                 continue;
 
-            if ( ! $this->_matchPrice($sum + $donation_price, $price, $current))
+            if ( ! $this->_matchPrice($sum + $donation_price, $price, $current, $only_one_donation))
                 continue;
 
             $sorted_donations_list->addRow($donation);
@@ -246,11 +260,17 @@ class SortDonationsForKid {
             unset($this->_donations[$key]);
             $sum += $donation_price;
 
-            if ( $sum >= ($price - ($price * static::$_variance_down)))
+            if ( $only_one_donation || $this->_matchMinPrice($sum, $price, $current))
                 return $this->_addTotal(count($current), $price);
         }
 
-        return $this->_addTotal($sum, $price);
+        return $this->_addTotal(count($current), $price);
+    }
+
+
+    protected function _matchMinPrice(float $sum, int $price, $current): bool
+    {
+        return $sum >= ($price - ($price * static::$_variance_down));
     }
 
 
@@ -266,7 +286,7 @@ class SortDonationsForKid {
     }
 
 
-    protected function _donationPriceIsToLow(int $donation_price, array $current, int $price) : bool {
+    protected function _donationPriceIsToLow(float $donation_price, array $current, int $price) : bool {
         if ( $this->_isQuine($price))
             return $this->_donationPriceIsToHighForQuine($donation_price, $current, $price);
 
@@ -286,19 +306,19 @@ class SortDonationsForKid {
     }
 
 
-    protected function _donationPriceIsToHighForQuine(int $donation_price, array $current, int $price) : bool {
+    protected function _donationPriceIsToHighForQuine(float $donation_price, array $current, int $price) : bool {
         return $donation_price > ($price * static::$_quine_max);
 
     }
 
 
-    protected function _donationPriceIsToHighForDoubleQuine(int $donation_price, array $current, int $price) : bool {
+    protected function _donationPriceIsToHighForDoubleQuine(float $donation_price, array $current, int $price) : bool {
         return $donation_price > ($price * static::$_double_quine_max);
 
     }
 
 
-    protected function _donationPriceIsToLowForCarton(int $donation_price, array $current, int $price) : bool {
+    protected function _donationPriceIsToLowForCarton(float $donation_price, array $current, int $price) : bool {
         return $current
             ? false
             : $donation_price < ($price * static::$_carton_min);
@@ -327,7 +347,10 @@ class SortDonationsForKid {
     }
 
 
-    protected function _matchPrice(int $sum, int $price, array $current) : bool {
+    protected function _matchPrice(float $sum, int $price, array $current, bool $only_one_donation = false) : bool {
+        if ( $only_one_donation)
+            return $sum >= ($price - ($price * static::$_variance_down));
+
         if ( $sum < ($price - ($price * static::$_variance_down)))
             return true;
 
