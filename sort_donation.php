@@ -4,9 +4,22 @@ class SortDonation {
     protected array $_donations_list = [];
     protected array $_loto_cfg = [];
     protected array $_log_stack = [];
+    protected string $_donations_filename;
+    protected bool $_is_valid = true;
 
-    public function __construct(string $donations_filename) {
+    protected static int $_try_counter = 0;
+
+    public function __construct(string $donations_filename, int $try_counter = 1) {
+        $this->_donations_filename = $donations_filename;
+        static::$_try_counter += $try_counter;
         $this->_log("OUTIL DE TRI DES DONS");
+        $this->_log("Date du : " . date('D d F, Y, H:i:s'));
+        $this->_log("Nombre de boucle(s) : " . static::$_try_counter);
+        if ( 10 <= static::$_try_counter) {
+            $this->_log("Trop de boucles…");
+            return $this->_printLog();
+        }
+
         $this->_donations_list = array_map('str_getcsv', file($donations_filename));
         $this->_donations_list = $this->_cleanDonations();
         shuffle($this->_donations_list);
@@ -20,6 +33,9 @@ class SortDonation {
 
         foreach($this->_loto_cfg as $player => $rules)
             $this->_sortDonationFor($player, $rules);
+
+        if ( ! $this->_is_valid)
+            return;
 
         $this->_exportCsv($sorted_donations_list);
 
@@ -53,6 +69,13 @@ class SortDonation {
                             $this->_loto_cfg['kid']['pas_de_bol'] ?? 0));
 
         $this->_exportResult($sorted_donations_list);
+        $this->_printLog();
+    }
+
+
+    protected function _printLog(): void
+    {
+        array_map(fn($log) => print(reset($log) . "\n"), $this->_log_stack);
     }
 
 
@@ -79,7 +102,6 @@ class SortDonation {
 
     protected function _log(string $message) : self {
         $this->_log_stack [] = [$message];
-        echo $message . "\n";
         return $this;
     }
 
@@ -92,11 +114,25 @@ class SortDonation {
 
     protected function _sortDonationFor(string $player,
                                         array $rules) : self {
+        if ( ! $this->_is_valid)
+            return $this;
+
         $sorted_donations_by_player = ($player == 'kid')
             ? new SortDonationsForKid($rules, $this->_donations_list)
             : new SortDonationsForAdult($rules, $this->_donations_list);
 
+        if ( ! $sorted_donations_by_player->isValid())
+            return $this->_beInvalid();
+
         $this->_donations_list = $sorted_donations_by_player->getDonationsList();
+        return $this;
+    }
+
+
+    protected function _beInvalid(): self
+    {
+        $this->_is_valid = false;
+        new self($this->_donations_filename);
         return $this;
     }
 
@@ -145,17 +181,19 @@ class SortDonationsForAdult extends SortDonationsForKid {
 
 class SortDonationsForKid {
 
-    protected static float $_variance_up = 0.10;
-    protected static float $_variance_down = 0.05;
-    protected static float $_double_quine_max = 0.3;
+    protected static float $_variance_up = 0.05;
+    protected static float $_variance_down = 0.1;
+    protected static float $_double_quine_max = 0.6;
     protected static float $_carton_min = 0.2;
-    protected static float $_quine_max = 0.3;
+    protected static float $_quine_max = 0.5;
 
-    protected static array $_allowed_as_multiples_donator = ['Intermarché Peron'];
+    protected static array $_allowed_as_multiples_donator = ['Intermarché Peron',
+                                                             'APE de Valleiry'];
 
     protected array $_donations;
     protected string $_player_key = 'Enfant';
     protected array $_rules = [];
+    protected bool $_is_valid = true;
 
 
     public function __construct(array $rules, array $donations) {
@@ -179,15 +217,15 @@ class SortDonationsForKid {
         if ($gros_lot)
         {
             $sorted_donations_list->addRow("Gros lot");
+            $sorted_donations_list->addRow("Carton");
             $this->_sortDonationsForPrice($gros_lot, true);
-            $sorted_donations_list->addBlankRow();
         }
 
         if ($pas_de_bol)
         {
             $sorted_donations_list->addRow("Pas de bol");
+            $sorted_donations_list->addRow("Carton");
             $this->_sortDonationsForPrice($pas_de_bol, true);
-            $sorted_donations_list->addBlankRow();
         }
 
         return $this;
@@ -214,13 +252,16 @@ class SortDonationsForKid {
                                                    ,$i));
 
             $sorted_donations_list->addRow("Quine");
-            $this->_sortDonationsForPrice($quine);
+            if ( !$this->_sortDonationsForPrice($quine))
+                return $this->_invalidSort($i, "quine");
 
             $sorted_donations_list->addRow("Double-quine");
-            $this->_sortDonationsForPrice($double_quine);
+            if ( !$this->_sortDonationsForPrice($double_quine))
+                return $this->_invalidSort($i, "double quine");
 
             $sorted_donations_list->addRow("Carton");
-            $this->_sortDonationsForPrice($carton);
+            if (!$this->_sortDonationsForPrice($carton))
+                return $this->_invalidSort($i, "carton");
 
             $sorted_donations_list->addBlankRow();
             $i++;
@@ -230,7 +271,24 @@ class SortDonationsForKid {
     }
 
 
-    protected function _sortDonationsForPrice(int $price, bool $only_one_donation = false) : self {
+    protected function _invalidSort(int $partie_id, $round_name): self
+    {
+        SortedDonationsList::getInstance()->addRow(sprintf('Partie %s n°%d, %s sans lot',
+                                                           $this->_player_key,
+                                                           $partie_id,
+                                                           $round_name));
+        $this->_is_valid = false;
+        return $this;
+    }
+
+
+    public function isValid(): bool
+    {
+        return $this->_is_valid;
+    }
+
+
+    protected function _sortDonationsForPrice(int $price, bool $only_one_donation = false): array {
         $sorted_donations_list = SortedDonationsList::getInstance();
         $sum = 0;
         $current = [];
@@ -261,10 +319,14 @@ class SortDonationsForKid {
             $sum += $donation_price;
 
             if ( $only_one_donation || $this->_matchMinPrice($sum, $price, $current))
-                return $this->_addTotal(count($current), $price);
+            {
+                $this->_addTotal(count($current), $price);
+                return $current;
+            }
         }
 
-        return $this->_addTotal(count($current), $price);
+        $this->_addTotal(count($current), $price);
+        return $current;
     }
 
 
