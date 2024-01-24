@@ -12,9 +12,11 @@ class SortDonation {
     public function __construct(string $donations_filename, int $try_counter = 1) {
         $this->_donations_filename = $donations_filename;
         static::$_try_counter += $try_counter;
+
         $this->_log("OUTIL DE TRI DES DONS");
         $this->_log("Date du : " . date('D d F, Y, H:i:s'));
         $this->_log("Nombre de boucle(s) : " . static::$_try_counter);
+
         if ( 10 <= static::$_try_counter) {
             $this->_log("Trop de boucles…");
             return $this->_printLog();
@@ -22,6 +24,7 @@ class SortDonation {
 
         $this->_donations_list = array_map('str_getcsv', file($donations_filename));
         $this->_donations_list = $this->_cleanDonations();
+
         shuffle($this->_donations_list);
         $this->_log(sprintf("Nombre de lots à trier : %d",
                             count($this->_donations_list)));
@@ -132,13 +135,14 @@ class SortDonation {
     protected function _beInvalid(): self
     {
         $this->_is_valid = false;
+        SortedDonationsList::getInstance()->reset();
         new self($this->_donations_filename);
         return $this;
     }
 
 
     protected function _exportCsv(SortedDonationsList $sorted_donations_list) : self {
-        unlink('sorted_donations.csv');
+        @unlink('sorted_donations.csv');
         $fp = fopen('sorted_donations.csv', 'w');
         array_map(fn ($row) => fputcsv($fp, $row), $sorted_donations_list->asArray());
         fclose($fp);
@@ -147,7 +151,7 @@ class SortDonation {
 
 
     protected function _exportNotSortedCsv() : self {
-        unlink('not_sorted_donations.csv');
+        @unlink('not_sorted_donations.csv');
         $fp = fopen('not_sorted_donations.csv', 'w');
         fputcsv($fp, ['RESTE DES DONS NON TRIÉS']);
         array_map(fn ($row) => fputcsv($fp, $row), $this->_donations_list);
@@ -162,7 +166,7 @@ class SortDonation {
                               $this->_donations_list,
                               [[]],
                               $sorted_donations_list->asArray());
-        unlink('auto_sort_loto_donations.csv');
+        @unlink('auto_sort_loto_donations.csv');
         $fp = fopen('auto_sort_loto_donations.csv', 'w');
         array_map(fn ($row) => fputcsv($fp, $row), $result);
         fclose($fp);
@@ -218,14 +222,16 @@ class SortDonationsForKid {
         {
             $sorted_donations_list->addRow("Gros lot");
             $sorted_donations_list->addRow("Carton");
-            $this->_sortDonationsForPrice($gros_lot, true);
+            if ( !$this->_sortDonationsForPrice($gros_lot, true))
+                return $this->_invalidSort(0, "gros_lot");
         }
 
         if ($pas_de_bol)
         {
             $sorted_donations_list->addRow("Pas de bol");
             $sorted_donations_list->addRow("Carton");
-            $this->_sortDonationsForPrice($pas_de_bol, true);
+            if ( !$this->_sortDonationsForPrice($pas_de_bol, true))
+                return $this->_invalidSort(0, "gros_lot");
         }
 
         return $this;
@@ -474,6 +480,14 @@ class SortedDonationsList {
 
     public function size() : int {
         return count($this->_donations_list);
+    }
+
+
+    public function reset(): self
+    {
+        $this->_sorted_donations_list = [];
+        $this->_donations_list = [];
+        return $this;
     }
 }
 
