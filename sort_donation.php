@@ -17,11 +17,12 @@ class SortDonation {
         $this->_log("Date du : " . date('D d F, Y, H:i:s'));
         $this->_log("Nombre de boucle(s) : " . static::$_try_counter);
 
-        if ( 10 <= static::$_try_counter) {
+        if ( 300 <= static::$_try_counter) {
             $this->_log("Trop de boucles…");
             return $this->_printLog();
         }
 
+        $this->_donations_list = [];
         $this->_donations_list = array_map('str_getcsv', file($donations_filename));
         $this->_donations_list = $this->_cleanDonations();
 
@@ -99,7 +100,7 @@ class SortDonation {
 
     protected function _filterByTarget(string $target) : array {
         return array_filter($this->_donations_list,
-                            fn($donation) => $target == $donation[4]);
+                            fn($donation) => $target == ($donation[4] ?? '') );
     }
 
 
@@ -136,6 +137,7 @@ class SortDonation {
     {
         $this->_is_valid = false;
         SortedDonationsList::getInstance()->reset();
+        $this->_donations_list = [];
         new self($this->_donations_filename);
         return $this;
     }
@@ -185,13 +187,18 @@ class SortDonationsForAdult extends SortDonationsForKid {
 
 class SortDonationsForKid {
 
-    protected static float $_variance_up = 0.05;
-    protected static float $_variance_down = 0.1;
-    protected static float $_double_quine_max = 0.6;
-    protected static float $_carton_min = 0.2;
-    protected static float $_quine_max = 0.5;
+    protected static float $_variance_up = 0.1; // lower is better
+    protected static float $_variance_down = 0.01; // lower is better
+    protected static float $_double_quine_max = 0.3; // lower is better to max carton
+    protected static float $_carton_min = 0.17; // higher is better
+    protected static float $_quine_max = 0.25; // lower is better
+
+    protected static float $_min_price = 5.00; // ignore lower donation price
 
     protected static array $_allowed_as_multiples_donator = ['Intermarché Peron',
+                                                             'Papo\'thé',
+                                                             'Tabac Viry',
+                                                             'Maped',
                                                              'APE de Valleiry'];
 
     protected array $_donations;
@@ -230,7 +237,7 @@ class SortDonationsForKid {
         {
             $sorted_donations_list->addRow("Pas de bol");
             $sorted_donations_list->addRow("Carton");
-            if ( !$this->_sortDonationsForPrice($pas_de_bol, true))
+            if ( !$this->_sortDonationsForPrice($pas_de_bol))
                 return $this->_invalidSort(0, "gros_lot");
         }
 
@@ -303,8 +310,7 @@ class SortDonationsForKid {
             if ( !$original_donatio_price = $donation[2] ?? 0)
                 continue;
 
-            $filtered_donation_price = filter_var($original_donatio_price, FILTER_SANITIZE_NUMBER_INT);
-            $donation_price = floatval($filtered_donation_price / 100);
+            $donation_price = $this->_parsePrice($original_donatio_price);
 
             if ( ! $this->_forMe($donation))
                 continue;
@@ -336,6 +342,18 @@ class SortDonationsForKid {
     }
 
 
+    // accepts "25,00 €", "37€", "12.5", "1 234,50 €"...
+    protected function _parsePrice(string $raw_price): float
+    {
+        $price = preg_replace('/[^\d,.]/', '', $raw_price);
+
+        if (preg_match('/^(.*)[,.](\d{1,2})$/', $price, $matches))
+            return (float) (preg_replace('/\D/', '', $matches[1]) . '.' . $matches[2]);
+
+        return (float) preg_replace('/\D/', '', $price);
+    }
+
+
     protected function _matchMinPrice(float $sum, int $price, $current): bool
     {
         return $sum >= ($price - ($price * static::$_variance_down));
@@ -355,6 +373,9 @@ class SortDonationsForKid {
 
 
     protected function _donationPriceIsToLow(float $donation_price, array $current, int $price) : bool {
+        if ( $donation_price < static::$_min_price)
+            return true;
+
         if ( $this->_isQuine($price))
             return $this->_donationPriceIsToHighForQuine($donation_price, $current, $price);
 
@@ -410,6 +431,21 @@ class SortDonationsForKid {
         foreach($current as $added_donation)
             if ($donator == $added_donation[0] ?? '')
                 return true;
+
+        $label = $donation[3] ?? '';
+        $count_bons = 0;
+        foreach($current as $added_donation)
+        {
+            $data_label = $added_donation[3] ?? '';
+            if ($label ==  $data_label)
+                return true;
+
+            if ($count_bons == 2)
+                return true;
+
+            if (strpos(strtolower($data_label), 'bon '))
+                $count_bons++;
+        }
 
         return false;
     }
