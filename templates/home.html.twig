@@ -2,6 +2,7 @@
 {% import '_macros.html.twig' as form %}
 
 {% set games = {adult: 'Parties adultes', kid: 'Parties enfants'} %}
+{% set game_icons = {adult: 'cup-straw', kid: 'balloon'} %}
 {% set lots = {
     round: ['Nombre de parties', null],
     quine: ['Quine (€)', null],
@@ -27,7 +28,7 @@
 
     {% if errors is not empty %}
         <div class="alert alert-danger" role="alert">
-            <p class="fw-semibold mb-1">Le tri n'a pas pu être lancé :</p>
+            <p class="fw-semibold mb-1"><i class="bi bi-emoji-frown" aria-hidden="true"></i> Oups, le tri n'a pas pu être lancé :</p>
             <ul class="mb-0">
                 {% for message in errors %}<li>{{ message }}</li>{% endfor %}
             </ul>
@@ -37,7 +38,7 @@
     <form method="post" action="{{ url_for('sort') }}" enctype="multipart/form-data">
         <div class="card mb-4">
             <div class="card-body">
-                <h2 class="h5 card-title">1. Les dons</h2>
+                <h2 class="h5 card-title"><i class="bi bi-cloud-arrow-up text-primary" aria-hidden="true"></i> 1. Les dons</h2>
                 <label class="form-label" for="donations">
                     Les fichiers CSV exportés du Google Sheet (un par onglet, plusieurs à la fois possible)
                 </label>
@@ -45,7 +46,7 @@
                        class="form-control{{ errors.donations is defined ? ' is-invalid' : '' }}">
                 <div class="form-text">
                     Colonnes lues : A donateur, C montant, D libellé, E public (Adulte, Enfant ou Mix).
-                    Pas encore de tableau ? <a href="{{ url_for('example') }}">Télécharger le modèle</a>
+                    Pas encore de tableau ? <a href="{{ url_for('example') }}"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i> Télécharger le modèle</a>
                     et l'importer dans Google Sheets.
                 </div>
             </div>
@@ -54,13 +55,13 @@
         <div class="card mb-4">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-baseline">
-                    <h2 class="h5 card-title">2. Les parties</h2>
-                    <a class="small" href="{{ url_for('home') }}?exemple">Charger la configuration d'exemple</a>
+                    <h2 class="h5 card-title"><i class="bi bi-dice-5 text-primary" aria-hidden="true"></i> 2. Les parties</h2>
+                    <a class="small" href="{{ url_for('home') }}?exemple"><i class="bi bi-magic" aria-hidden="true"></i> Charger la configuration d'exemple</a>
                 </div>
                 <div class="row">
                     {% for section, title in games %}
                         <fieldset class="col-md-6">
-                            <legend class="h6 mt-2">{{ title }}</legend>
+                            <legend class="h6 mt-2"><i class="bi bi-{{ game_icons[section] }}" aria-hidden="true"></i> {{ title }}</legend>
                             <div class="row">
                                 {% for key, field in lots %}
                                     <div class="col-6">
@@ -73,7 +74,7 @@
                 </div>
 
                 <details class="mt-2">
-                    <summary class="fw-semibold">Réglages avancés</summary>
+                    <summary class="fw-semibold"><i class="bi bi-sliders" aria-hidden="true"></i> Réglages avancés</summary>
                     <div class="row mt-3">
                         <div class="col-md-6">
                             <label class="form-label" for="allowed-donors">
@@ -97,6 +98,6 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-lg">Trier les dons</button>
+        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-magic" aria-hidden="true"></i> Trier les dons</button>
     </form>
 {% endblock %}

@@ -3,40 +3,46 @@
 
 {% set result = report.result %}
 {% set tolerance = report.config.policy.toleranceBelow %}
+{% set game_icons = {adult: 'cup-straw', kid: 'balloon'} %}
+{% set stats = [
+    ['Dons lus', result.donationCount, 'gift', 'text-primary'],
+    ['Dons placés', result.sortedCount, 'emoji-laughing', 'text-success'],
+    ['Dons restants', result.unsortedCount, 'piggy-bank', 'text-warning'],
+    ['Essais', result.attempts, 'arrow-repeat', 'text-secondary'],
+] %}
 
 {% block title %}Résultat du tri · LotoSorter{% endblock %}
 
 {% block content %}
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-        <h1 class="h3 mb-0">Résultat du tri</h1>
-        <a class="btn btn-outline-secondary" href="{{ url_for('home') }}">Nouveau tri</a>
+        <h1 class="h3 mb-0"><i class="bi bi-trophy text-warning" aria-hidden="true"></i> Résultat du tri</h1>
+        <a class="btn btn-outline-secondary" href="{{ url_for('home') }}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Nouveau tri</a>
     </div>
 
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3"><div class="card card-body">
-            <div class="text-body-secondary small">Dons lus</div><div class="fs-4 fw-semibold">{{ result.donationCount }}</div>
-        </div></div>
-        <div class="col-6 col-md-3"><div class="card card-body">
-            <div class="text-body-secondary small">Dons placés</div><div class="fs-4 fw-semibold">{{ result.sortedCount }}</div>
-        </div></div>
-        <div class="col-6 col-md-3"><div class="card card-body">
-            <div class="text-body-secondary small">Dons restants</div><div class="fs-4 fw-semibold">{{ result.unsortedCount }}</div>
-        </div></div>
-        <div class="col-6 col-md-3"><div class="card card-body">
-            <div class="text-body-secondary small">Essais</div><div class="fs-4 fw-semibold">{{ result.attempts }}</div>
-        </div></div>
+        {% for stat in stats %}
+            <div class="col-6 col-md-3">
+                <div class="card card-body d-flex flex-row align-items-center gap-3">
+                    <i class="bi bi-{{ stat[2] }} stat-icon {{ stat[3] }}" aria-hidden="true"></i>
+                    <div>
+                        <div class="text-body-secondary small">{{ stat[0] }}</div>
+                        <div class="fs-4 fw-semibold">{{ stat[1] }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
     </div>
 
     <div class="card mb-4">
         <div class="card-body">
-            <h2 class="h5 card-title">Télécharger</h2>
+            <h2 class="h5 card-title"><i class="bi bi-download" aria-hidden="true"></i> Télécharger</h2>
             <p class="small text-body-secondary">
                 Importer « Tout en un » dans Google Sheets (<em>Fichier &gt; Importer &gt; Insérer de nouvelles feuilles</em>) :
                 les totaux « Mise de » y sont des formules.
             </p>
             {% for file in downloads %}
                 <a class="btn {{ loop.first ? 'btn-primary' : 'btn-outline-primary' }} me-2 mb-2"
-                   href="{{ file.url }}" download="{{ file.name }}">{{ file.title }}</a>
+                   href="{{ file.url }}" download="{{ file.name }}"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i> {{ file.title }}</a>
             {% endfor %}
             <details class="mt-2">
                 <summary class="small">Résumé du tri</summary>
@@ -46,9 +52,10 @@
     </div>
 
     {% for grid in result.grids %}
-        <h2 class="h4 mt-4">Parties {{ grid.audience.pluralLabel|lower }}</h2>
+        <h2 class="h4 mt-4"><i class="bi bi-{{ game_icons[grid.audience.value] }} text-primary" aria-hidden="true"></i>
+            Parties {{ grid.audience.pluralLabel|lower }}</h2>
         {% for round in grid.rounds %}
-            <h3 class="h6 mt-3 text-body-secondary">Partie n°{{ round.number }}</h3>
+            <h3 class="h6 mt-3 text-body-secondary"><i class="bi bi-ticket-perforated" aria-hidden="true"></i> Partie n°{{ round.number }}</h3>
             <div class="row g-3">
                 {% for lot in round.lots %}
                     <div class="col-lg-4">{% include '_lot.html.twig' %}</div>
@@ -56,7 +63,7 @@
             </div>
         {% endfor %}
         {% if grid.extraLots is not empty %}
-            <h3 class="h6 mt-3 text-body-secondary">Lots spéciaux</h3>
+            <h3 class="h6 mt-3 text-body-secondary"><i class="bi bi-stars" aria-hidden="true"></i> Lots spéciaux</h3>
             <div class="row g-3">
                 {% for lot in grid.extraLots %}
                     <div class="col-lg-4">{% include '_lot.html.twig' %}</div>
@@ -65,9 +72,9 @@
         {% endif %}
     {% endfor %}
 
-    <h2 class="h4 mt-5">Dons non placés ({{ result.unsortedCount }})</h2>
+    <h2 class="h4 mt-5"><i class="bi bi-piggy-bank text-warning" aria-hidden="true"></i> Dons non placés ({{ result.unsortedCount }})</h2>
     {% if result.unsorted is empty %}
-        <p>Tous les dons ont été placés.</p>
+        <p><i class="bi bi-emoji-sunglasses text-success" aria-hidden="true"></i> Tous les dons ont été placés, bravo !</p>
     {% else %}
         <div class="table-responsive">
             <table class="table table-sm table-striped align-middle bg-body">

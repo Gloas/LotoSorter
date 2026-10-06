@@ -4,25 +4,33 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}LotoSorter{% endblock %}</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <style>
         details > summary { cursor: pointer; }
         .lot-card .list-group-item { font-size: .9rem; }
+        .stat-icon { font-size: 1.75rem; line-height: 1; }
+        .navbar-brand img { transition: transform .6s; }
+        .navbar-brand:hover img { transform: rotate(360deg); }
     </style>
 </head>
 <body class="bg-body-tertiary">
 <nav class="navbar bg-primary mb-4" data-bs-theme="dark">
     <div class="container">
-        <a class="navbar-brand fw-semibold" href="{{ url_for('home') }}">LotoSorter</a>
-        <span class="navbar-text small">Tri automatique des lots du loto</span>
+        <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="{{ url_for('home') }}">
+            <img src="/favicon.svg" alt="" width="30" height="30"> LotoSorter
+        </a>
+        <span class="navbar-text small"><i class="bi bi-stars" aria-hidden="true"></i> Tri automatique des lots du loto</span>
     </div>
 </nav>
 <main class="container pb-5">
     {% block content %}{% endblock %}
 </main>
 <footer class="container pb-4 small text-body-secondary">
-    Les fichiers envoyés sont traités en mémoire et ne sont jamais conservés sur le serveur.
-    · <a href="https://github.com/Gloas/LotoSorter">Code source</a>
+    <i class="bi bi-shield-lock" aria-hidden="true"></i> Les fichiers envoyés sont traités en mémoire et ne sont jamais conservés sur le serveur.
+    · <a href="https://github.com/Gloas/LotoSorter"><i class="bi bi-github" aria-hidden="true"></i> Code source</a>
+    · Icônes <a href="https://icons.getbootstrap.com/">Bootstrap Icons</a> (MIT)
 </footer>
 </body>
 </html>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>LotoSorter</title>
+  <circle cx="32" cy="32" r="30" fill="#e63946"/>
+  <path d="M14 18a24 24 0 0 1 16-10" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="32" cy="33" r="17" fill="#fff"/>
+  <text x="32" y="41" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700"
+        text-anchor="middle" fill="#1d3557">90</text>
+</svg>

@@ -1,10 +1,12 @@
 {% import '_macros.html.twig' as format %}
 {% set complete = lot.reachesTarget(tolerance) %}
+{% set lot_icons = {quine: 'dice-3', double_quine: 'dice-6', carton: 'trophy', gros_lot: 'gem', pas_de_bol: 'emoji-dizzy'} %}
 <div class="card h-100 lot-card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span class="fw-semibold">{{ lot.type.label }}</span>
+        <span class="fw-semibold"><i class="bi bi-{{ lot_icons[lot.type.value] }} text-primary" aria-hidden="true"></i> {{ lot.type.label }}</span>
         <span class="badge {{ complete ? 'text-bg-success' : 'text-bg-warning' }}"
               title="{{ complete ? 'Cible atteinte' : 'Sous la cible' }}">
+            <i class="bi bi-{{ complete ? 'check-lg' : 'hourglass-split' }}" aria-hidden="true"></i>
             {{ format.amount(lot.total) }} / {{ lot.target }} €
         </span>
     </div>
