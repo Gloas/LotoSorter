@@ -1,0 +1,31 @@
+{
+    "name": "gloas/loto-sorter",
+    "description": "Sort a CSV of donations into balanced Loto rounds",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5 || ^11.0 || ^12.0"
+    },
+    "autoload-dev": {
+        "files": [
+            "sort_donation.php"
+        ],
+        "classmap": [
+            "tests/"
+        ]
+    },
+    "scripts": {
+        "sort": "php sort_donation.php",
+        "test": "phpunit"
+    },
+    "scripts-descriptions": {
+        "sort": "Sort a CSV of donations: composer sort -- all.csv",
+        "test": "Run the test suite"
+    },
+    "config": {
+        "process-timeout": 0
+    }
+}

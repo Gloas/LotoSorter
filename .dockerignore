@@ -1,0 +1,11 @@
+# Keep personal data and local artefacts out of the image
+.git/
+vendor/
+data/
+data_*/
+all.csv
+sorted_donations.csv
+not_sorted_donations.csv
+auto_sort_loto_donations.csv
+.phpunit.cache/
+.phpunit.result.cache

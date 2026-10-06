@@ -23,7 +23,8 @@ class SortDonation {
         }
 
         $this->_donations_list = [];
-        $this->_donations_list = array_map('str_getcsv', file($donations_filename));
+        $this->_donations_list = array_map(fn($line) => str_getcsv($line, escape: ''),
+                                            file($donations_filename));
         $this->_donations_list = $this->_cleanDonations();
 
         shuffle($this->_donations_list);
@@ -146,7 +147,7 @@ class SortDonation {
     protected function _exportCsv(SortedDonationsList $sorted_donations_list) : self {
         @unlink('sorted_donations.csv');
         $fp = fopen('sorted_donations.csv', 'w');
-        array_map(fn ($row) => fputcsv($fp, $row), $sorted_donations_list->asArray());
+        array_map(fn ($row) => fputcsv($fp, $row, escape: ''), $sorted_donations_list->asArray());
         fclose($fp);
         return $this;
     }
@@ -155,8 +156,8 @@ class SortDonation {
     protected function _exportNotSortedCsv() : self {
         @unlink('not_sorted_donations.csv');
         $fp = fopen('not_sorted_donations.csv', 'w');
-        fputcsv($fp, ['RESTE DES DONS NON TRIÉS']);
-        array_map(fn ($row) => fputcsv($fp, $row), $this->_donations_list);
+        fputcsv($fp, ['RESTE DES DONS NON TRIÉS'], escape: '');
+        array_map(fn ($row) => fputcsv($fp, $row, escape: ''), $this->_donations_list);
         fclose($fp);
         return $this;
     }
@@ -170,7 +171,7 @@ class SortDonation {
                               $sorted_donations_list->asArray());
         @unlink('auto_sort_loto_donations.csv');
         $fp = fopen('auto_sort_loto_donations.csv', 'w');
-        array_map(fn ($row) => fputcsv($fp, $row), $result);
+        array_map(fn ($row) => fputcsv($fp, $row, escape: ''), $result);
         fclose($fp);
         return $this;
     }
@@ -529,5 +530,7 @@ class SortedDonationsList {
 
 
 
-new SortDonation($argv[1]);
+// only run when called directly, not when included (tests)
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__)
+    new SortDonation($argv[1]);
 ?>

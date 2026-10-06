@@ -1,0 +1,12 @@
+services:
+  # docker compose run --rm sort all.csv
+  sort:
+    build: .
+    volumes:
+      - .:/work
+
+  # docker compose run --rm test
+  test:
+    build: .
+    working_dir: /app
+    entrypoint: ["composer", "test"]

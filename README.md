@@ -10,13 +10,19 @@ grids.
 
 ## Requirements
 
-- PHP 8.1 or newer (CLI), no extension or dependency needed.
+Either:
+
+- PHP 8.1 or newer (CLI) to sort, plus PHP 8.3 and
+  [Composer](https://getcomposer.org/) to run the tests;
+- or only Docker (with Compose), see [Docker](#docker).
 
 ## Quick start with the example
 
 ```sh
 cp examples/loto_config.exemple.ini loto_config.ini
 php sort_donation.php examples/lots_loto_exemple.csv
+# or: composer sort -- examples/lots_loto_exemple.csv
+# or: docker compose run --rm sort examples/lots_loto_exemple.csv
 ```
 
 > `sort_donation.php` always reads `./loto_config.ini` and writes its output
@@ -116,13 +122,35 @@ filled lot by lot with a greedy pass over the remaining gifts:
   the donors listed in `$_allowed_as_multiples_donator`, e.g. the APE's own
   purchases), and the number of vouchers ("... bon ...") in a lot is limited.
 
-If a lot cannot be filled, everything is reshuffled and retried, up to 300
-times. If it still fails, the script prints `Trop de boucles…`: lower the
+A lot that cannot reach its target keeps the gifts it got (check the
+"Mise de" totals). If a lot gets no gift at all, everything is reshuffled and
+retried, up to 300 times. If it still fails, the script prints `Trop de boucles…`: lower the
 amounts or the number of rounds in `loto_config.ini`, or collect more gifts.
 
 These thresholds are constants at the top of `SortDonationsForKid` in
 `sort_donation.php` (`$_variance_up`, `$_variance_down`, `$_quine_max`,
 `$_double_quine_max`, `$_carton_min`, `$_min_price`).
+
+## Docker
+
+The image contains PHP, Composer and the tests; your data never goes into it
+(see `.dockerignore`). The project folder is mounted as the working
+directory, so `loto_config.ini` is read from it and the CSVs are written to it.
+
+```sh
+docker compose build
+docker compose run --rm sort all.csv    # same as: php sort_donation.php all.csv
+docker compose run --rm test            # run the test suite
+```
+
+Rebuild the image (`docker compose build`) after changing the code.
+
+## Tests
+
+```sh
+composer install
+composer test
+```
 
 ## Output files
 
