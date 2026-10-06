@@ -1,5 +1,7 @@
 # LotoSorter
 
+[![Tests](https://github.com/Gloas/LotoSorter/actions/workflows/tests.yml/badge.svg)](https://github.com/Gloas/LotoSorter/actions/workflows/tests.yml)
+
 Tool that sorts a list of donations (lots) collected for a Loto evening into
 balanced prize lots: Quine, Double-quine and Carton for each round, plus
 optional "Gros lot" and "Pas de bol" rounds, for adults and kids.
