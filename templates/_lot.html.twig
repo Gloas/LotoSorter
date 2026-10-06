@@ -1,0 +1,20 @@
+{% import '_macros.html.twig' as format %}
+{% set complete = lot.reachesTarget(tolerance) %}
+<div class="card h-100 lot-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">{{ lot.type.label }}</span>
+        <span class="badge {{ complete ? 'text-bg-success' : 'text-bg-warning' }}"
+              title="{{ complete ? 'Cible atteinte' : 'Sous la cible' }}">
+            {{ format.amount(lot.total) }} / {{ lot.target }} €
+        </span>
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for donation in lot.donations %}
+            <li class="list-group-item d-flex justify-content-between gap-2">
+                <span><span class="fw-medium">{{ donation.label }}</span>
+                    <span class="d-block text-body-secondary small">{{ donation.donor }}</span></span>
+                <span class="text-nowrap">{{ format.amount(donation.amount) }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+</div>

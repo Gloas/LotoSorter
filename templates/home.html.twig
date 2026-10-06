@@ -1,0 +1,102 @@
+{% extends 'layout.html.twig' %}
+{% import '_macros.html.twig' as form %}
+
+{% set games = {adult: 'Parties adultes', kid: 'Parties enfants'} %}
+{% set lots = {
+    round: ['Nombre de parties', null],
+    quine: ['Quine (€)', null],
+    double_quine: ['Double-quine (€)', null],
+    carton: ['Carton (€)', null],
+    gros_lot: ['Gros lot (€)', 'Un seul cadeau d\'au moins ce montant, 0 = aucun.'],
+    pas_de_bol: ['Pas de bol (€)', 'Lot de consolation, 0 = aucun.'],
+} %}
+{% set settings = {
+    min_amount: ['Montant minimum d\'un cadeau (€)', 0.5],
+    quine_max_share: ['Part max. d\'un cadeau dans une Quine', 0.01],
+    double_quine_max_share: ['Part max. d\'un cadeau dans une Double-quine', 0.01],
+    carton_min_share: ['Part min. du premier cadeau d\'un Carton', 0.01],
+    tolerance_below: ['Tolérance sous la cible', 0.01],
+    tolerance_above: ['Tolérance au-dessus de la cible', 0.01],
+    max_vouchers_per_lot: ['Bons d\'achat max. par lot', 1],
+    max_attempts: ['Nombre d\'essais max.', 1],
+} %}
+{% set donors = values.sorting.allowed_donors ?? '' %}
+
+{% block content %}
+    <h1 class="h3 mb-3">Trier les dons</h1>
+
+    {% if errors is not empty %}
+        <div class="alert alert-danger" role="alert">
+            <p class="fw-semibold mb-1">Le tri n'a pas pu être lancé :</p>
+            <ul class="mb-0">
+                {% for message in errors %}<li>{{ message }}</li>{% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('sort') }}" enctype="multipart/form-data">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h5 card-title">1. Les dons</h2>
+                <label class="form-label" for="donations">
+                    Les fichiers CSV exportés du Google Sheet (un par onglet, plusieurs à la fois possible)
+                </label>
+                <input type="file" id="donations" name="donations[]" accept=".csv,text/csv" multiple required
+                       class="form-control{{ errors.donations is defined ? ' is-invalid' : '' }}">
+                <div class="form-text">
+                    Colonnes lues : A donateur, C montant, D libellé, E public (Adulte, Enfant ou Mix).
+                    Pas encore de tableau ? <a href="{{ url_for('example') }}">Télécharger le modèle</a>
+                    et l'importer dans Google Sheets.
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-baseline">
+                    <h2 class="h5 card-title">2. Les parties</h2>
+                    <a class="small" href="{{ url_for('home') }}?exemple">Charger la configuration d'exemple</a>
+                </div>
+                <div class="row">
+                    {% for section, title in games %}
+                        <fieldset class="col-md-6">
+                            <legend class="h6 mt-2">{{ title }}</legend>
+                            <div class="row">
+                                {% for key, field in lots %}
+                                    <div class="col-6">
+                                        {{ form.number(section, key, field[0], values, errors, 1, field[1]) }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                    {% endfor %}
+                </div>
+
+                <details class="mt-2">
+                    <summary class="fw-semibold">Réglages avancés</summary>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="allowed-donors">
+                                Donateurs autorisés plusieurs fois dans un même lot
+                            </label>
+                            <textarea id="allowed-donors" name="config[sorting][allowed_donors]" rows="6"
+                                      class="form-control">{{ donors is iterable ? donors|join("\n") : donors }}</textarea>
+                            <div class="form-text">Un nom par ligne, tel qu'écrit en colonne A (achats de l'APE…).</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row">
+                                {% for key, field in settings %}
+                                    <div class="col-6">
+                                        {{ form.number('sorting', key, field[0], values, errors, field[1]) }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg">Trier les dons</button>
+    </form>
+{% endblock %}

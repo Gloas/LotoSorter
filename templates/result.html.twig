@@ -1,0 +1,88 @@
+{% extends 'layout.html.twig' %}
+{% import '_macros.html.twig' as format %}
+
+{% set result = report.result %}
+{% set tolerance = report.config.policy.toleranceBelow %}
+
+{% block title %}Résultat du tri · LotoSorter{% endblock %}
+
+{% block content %}
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h1 class="h3 mb-0">Résultat du tri</h1>
+        <a class="btn btn-outline-secondary" href="{{ url_for('home') }}">Nouveau tri</a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3"><div class="card card-body">
+            <div class="text-body-secondary small">Dons lus</div><div class="fs-4 fw-semibold">{{ result.donationCount }}</div>
+        </div></div>
+        <div class="col-6 col-md-3"><div class="card card-body">
+            <div class="text-body-secondary small">Dons placés</div><div class="fs-4 fw-semibold">{{ result.sortedCount }}</div>
+        </div></div>
+        <div class="col-6 col-md-3"><div class="card card-body">
+            <div class="text-body-secondary small">Dons restants</div><div class="fs-4 fw-semibold">{{ result.unsortedCount }}</div>
+        </div></div>
+        <div class="col-6 col-md-3"><div class="card card-body">
+            <div class="text-body-secondary small">Essais</div><div class="fs-4 fw-semibold">{{ result.attempts }}</div>
+        </div></div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="h5 card-title">Télécharger</h2>
+            <p class="small text-body-secondary">
+                Importer « Tout en un » dans Google Sheets (<em>Fichier &gt; Importer &gt; Insérer de nouvelles feuilles</em>) :
+                les totaux « Mise de » y sont des formules.
+            </p>
+            {% for file in downloads %}
+                <a class="btn {{ loop.first ? 'btn-primary' : 'btn-outline-primary' }} me-2 mb-2"
+                   href="{{ file.url }}" download="{{ file.name }}">{{ file.title }}</a>
+            {% endfor %}
+            <details class="mt-2">
+                <summary class="small">Résumé du tri</summary>
+                <pre class="small mt-2 mb-0">{{ report.summary|join("\n") }}</pre>
+            </details>
+        </div>
+    </div>
+
+    {% for grid in result.grids %}
+        <h2 class="h4 mt-4">Parties {{ grid.audience.pluralLabel|lower }}</h2>
+        {% for round in grid.rounds %}
+            <h3 class="h6 mt-3 text-body-secondary">Partie n°{{ round.number }}</h3>
+            <div class="row g-3">
+                {% for lot in round.lots %}
+                    <div class="col-lg-4">{% include '_lot.html.twig' %}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        {% if grid.extraLots is not empty %}
+            <h3 class="h6 mt-3 text-body-secondary">Lots spéciaux</h3>
+            <div class="row g-3">
+                {% for lot in grid.extraLots %}
+                    <div class="col-lg-4">{% include '_lot.html.twig' %}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endfor %}
+
+    <h2 class="h4 mt-5">Dons non placés ({{ result.unsortedCount }})</h2>
+    {% if result.unsorted is empty %}
+        <p>Tous les dons ont été placés.</p>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle bg-body">
+                <thead><tr><th>Donateur</th><th>Libellé</th><th>Public</th><th class="text-end">Montant</th></tr></thead>
+                <tbody>
+                {% for donation in result.unsorted %}
+                    <tr>
+                        <td>{{ donation.donor }}</td>
+                        <td>{{ donation.label }}</td>
+                        <td>{{ donation.audience ? donation.audience.label : '?' }}</td>
+                        <td class="text-end text-nowrap">{{ format.amount(donation.amount) }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

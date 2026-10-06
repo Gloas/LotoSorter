@@ -1,0 +1,17 @@
+{% macro number(section, key, label, values, errors, step = 1, help = null) %}
+    {% set field = section ~ '.' ~ key %}
+    {% set id = section ~ '-' ~ key %}
+    <div class="mb-3">
+        <label class="form-label" for="{{ id }}">{{ label }}</label>
+        <input type="number" min="0" step="{{ step }}" id="{{ id }}" name="config[{{ section }}][{{ key }}]"
+               value="{{ values[section][key] ?? '' }}"
+               class="form-control{{ errors[field] is defined ? ' is-invalid' : '' }}">
+        {% if errors[field] is defined %}
+            <div class="invalid-feedback">{{ errors[field] }}</div>
+        {% elseif help %}
+            <div class="form-text">{{ help }}</div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% macro amount(value) %}{{ value|number_format(2, ',', ' ') }} €{% endmacro %}

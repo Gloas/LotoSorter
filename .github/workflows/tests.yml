@@ -6,6 +6,27 @@ on:
   pull_request:
 
 jobs:
+  quality:
+    name: PSR-12 and static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+
+      - name: Check the PSR-12 coding style
+        run: composer lint
+
+      - name: Run the static analysis
+        run: composer analyse
+
   phpunit:
     name: PHP ${{ matrix.php }}
     runs-on: ubuntu-latest
@@ -37,7 +58,7 @@ jobs:
       - name: Build image
         run: docker compose build
 
-      - name: Run tests in the image
+      - name: Run the checks in the image
         run: docker compose run --rm test
 
       - name: Sort the example sheet in the image
@@ -45,3 +66,14 @@ jobs:
           cp examples/loto_config.exemple.ini loto_config.ini
           docker compose run --rm sort examples/lots_loto_exemple.csv
           test -s sorted_donations.csv
+
+      - name: Serve the web interface
+        run: |
+          docker compose up -d web
+          for i in $(seq 1 20); do curl -fsS http://localhost:8080/ > /dev/null && break; sleep 1; done
+          curl -fsS http://localhost:8080/ | grep -q 'Trier les dons'
+          curl -fsS -F 'donations[]=@examples/lots_loto_exemple.csv' \
+            -F 'config[adult][round]=2' -F 'config[adult][quine]=40' \
+            -F 'config[adult][double_quine]=80' -F 'config[adult][carton]=120' \
+            http://localhost:8080/ | grep -q 'Résultat du tri'
+          docker compose down
