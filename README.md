@@ -2,6 +2,8 @@
 
 [![Tests](https://github.com/Gloas/LotoSorter/actions/workflows/tests.yml/badge.svg)](https://github.com/Gloas/LotoSorter/actions/workflows/tests.yml)
 
+[Version française](README.fr.md)
+
 Tool that sorts a list of donations (lots) collected for a Loto evening into
 balanced prize lots: Quine, Double-quine and Carton for each round, plus
 optional "Gros lot" and "Pas de bol" rounds, for adults and kids.
@@ -153,6 +155,10 @@ Rebuild the image (`docker compose build`) after changing the code.
 composer install
 composer test
 ```
+
+The tests also run on GitHub Actions on every push to `main` and every pull
+request: PHPUnit on PHP 8.3, 8.4 and 8.5, then the Docker image is built and
+the tests and the example sort run inside it.
 
 ## Output files
 
