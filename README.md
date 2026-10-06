@@ -34,6 +34,9 @@ composer serve        # then open http://localhost:8080
 Files are processed in memory and never stored on the server. Download
 "Tout en un" and import it in Google Sheets.
 
+The web interface has no login: run it on your own computer, not on a public
+server.
+
 ## Command line
 
 ```sh
@@ -178,3 +181,12 @@ src/
 └── Web/             Slim actions and form handling (public/index.php, templates/)
 config/container.php PHP-DI container, the only place where services are wired
 ```
+
+## Credits
+
+- [Slim](https://www.slimframework.com/) and [PHP-DI](https://php-di.org/),
+  MIT licence; [Twig](https://twig.symfony.com/), BSD-3-Clause licence.
+- [Bootstrap](https://getbootstrap.com/) and
+  [Bootstrap Icons](https://icons.getbootstrap.com/), MIT licence.
+- The loto ball favicon (`public/favicon.svg`) is part of this project, MIT
+  licence.

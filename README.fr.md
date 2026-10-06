@@ -37,6 +37,9 @@ composer serve        # puis ouvrir http://localhost:8080
 Les fichiers sont traités en mémoire et jamais conservés sur le serveur.
 Télécharger « Tout en un » et l'importer dans Google Sheets.
 
+L'interface web n'a ni compte ni mot de passe : la lancer sur son propre
+ordinateur, pas sur un serveur public.
+
 ## Ligne de commande
 
 ```sh
@@ -188,3 +191,12 @@ src/
 └── Web/             actions Slim et formulaire (public/index.php, templates/)
 config/container.php conteneur PHP-DI, seul endroit où les services sont assemblés
 ```
+
+## Crédits
+
+- [Slim](https://www.slimframework.com/) et [PHP-DI](https://php-di.org/),
+  licence MIT ; [Twig](https://twig.symfony.com/), licence BSD-3-Clause.
+- [Bootstrap](https://getbootstrap.com/) et
+  [Bootstrap Icons](https://icons.getbootstrap.com/), licence MIT.
+- Le favicon en forme de boule de loto (`public/favicon.svg`) fait partie du
+  projet, licence MIT.
